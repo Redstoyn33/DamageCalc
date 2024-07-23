@@ -1,5 +1,5 @@
 [package]
-name = "DamageCalc"
+name = "damage_calc"
 version = "0.1.0"
 authors = ["Redstoyn33", "timoxxor"]
 edition = "2021"
