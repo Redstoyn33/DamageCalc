@@ -1,6 +1,6 @@
 {
-  "name": "egui Template PWA",
-  "short_name": "egui-template-pwa",
+  "name": "DamageCalc PWA",
+  "short_name": "DamageCalc-pwa",
   "icons": [
     {
       "src": "./icon-256.png",
