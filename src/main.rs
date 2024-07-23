@@ -37,7 +37,7 @@ fn main() {
             .start(
                 "the_canvas_id",
                 web_options,
-                Box::new(|cc| Ok(Box::new(DamageCalc::TemplateApp::new(cc)))),
+                Box::new(|cc| Ok(Box::new(DamageCalc::DamageCalcApp::new(cc)))),
             )
             .await;
 
