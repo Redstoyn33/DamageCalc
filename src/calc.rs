@@ -16,6 +16,7 @@ pub struct Unit {
     pub name: String,
     pub stats: Stats,
     pub value: i32,
+    pub damage_left: i32,
 }
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)]
@@ -53,7 +54,7 @@ pub fn deser_stats(value: &Value) -> Option<Stats> {
 
 impl Calc {
     pub fn update(&mut self, json: &str) -> i32 {
-        if let Some((new_classes,errs)) = map_json(json) {
+        if let Some((new_classes, errs)) = map_json(json) {
             self.classes = new_classes;
             errs
         } else {
@@ -84,15 +85,23 @@ impl Calc {
 
             let damage_dealt = (damage * attacker.value) as f32
                 * (1.0 + (delta as f32 / 100.0))
-                * (percent as f32 / 100.0) as f32;
-            let creatures_killed =
-                (damage * attacker.value) as f32 * (1.0 + (delta as f32 / 100.0)) / health as f32
-                    * (percent as f32 / 100.0) as f32;
+                * (percent as f32 / 100.0);
 
-            defender.value -= creatures_killed as i32;
+            let all_health = (defender.value * health) as f32;
+
+            let creatures_left =
+                (all_health - damage_dealt - defender.damage_left as f32) / health as f32;
+
+            defender.value = creatures_left.ceil() as i32;
+
+            defender.damage_left =
+                ((creatures_left.ceil() - creatures_left) * health as f32) as i32;
 
             if retaliation {
-                return (damage_dealt as i32, Some(self.calculate(attacker, defender, 100, false).0));
+                return (
+                    damage_dealt as i32,
+                    Some(self.calculate(attacker, defender, 100, false).0),
+                );
             }
             return (damage_dealt as i32, None);
         } else if attack < defence {
@@ -102,27 +111,44 @@ impl Calc {
             }
 
             let damage_dealt = (damage * attacker.value) as f32
-                * (1.0 - delta / 100.0)
-                * (percent as f32 / 100.0) as f32;
-            let creatures_killed = (damage * attacker.value) as f32 * (1.0 - delta / 100.0)
-                / health as f32
-                * (percent as f32 / 100.0) as f32;
+                * (1.0 - (delta as f32 / 100.0))
+                * (percent as f32 / 100.0);
 
+            let all_health = (defender.value * health) as f32;
 
-            defender.value -= creatures_killed as i32;
+            let creatures_left =
+                (all_health - damage_dealt - defender.damage_left as f32) / health as f32;
+
+            defender.value = creatures_left.ceil() as i32;
+
+            defender.damage_left =
+                ((creatures_left.ceil() - creatures_left) * health as f32) as i32;
 
             if retaliation {
-                return (damage_dealt as i32, Some(self.calculate(attacker, defender, 100, false).0));
+                return (
+                    damage_dealt as i32,
+                    Some(self.calculate(attacker, defender, 100, false).0),
+                );
             }
             return (damage_dealt as i32, None);
         } else {
-            let damage_dealt = damage as f32 * attacker.value as f32;
-            let creatures_killed = damage as f32 * attacker.value as f32 / health as f32;
+            let damage_dealt = (damage * attacker.value) as f32 * (percent as f32 / 100.0);
 
-            defender.value -= creatures_killed as i32;
+            let all_health = (defender.value * health) as f32;
+
+            let creatures_left =
+                (all_health - damage_dealt - defender.damage_left as f32) / health as f32;
+
+            defender.value = creatures_left.ceil() as i32;
+
+            defender.damage_left =
+                ((creatures_left.ceil() - creatures_left) * health as f32) as i32;
 
             if retaliation {
-                return (damage_dealt as i32, Some(self.calculate(attacker, defender, 100, false).0));
+                return (
+                    damage_dealt as i32,
+                    Some(self.calculate(attacker, defender, 100, false).0),
+                );
             }
 
             return (damage_dealt as i32, None);

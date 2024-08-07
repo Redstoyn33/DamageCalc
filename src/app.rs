@@ -304,9 +304,9 @@ impl eframe::App for DamageCalcApp {
             team0_panel.max.x -= ui.spacing().window_margin.right;
             team1_panel.min.x += ui.spacing().window_margin.left;
             let mut team_render = |ui: &mut Ui,
-                               team: &mut Team,
-                               team_num: usize,
-                               enemy_team: &mut Team| {
+                                   team: &mut Team,
+                                   team_num: usize,
+                                   enemy_team: &mut Team| {
                 if let Some(unit_cell) = team.units.get_mut(team.select) {
                     if let Some(unit) = unit_cell {
                         ui.horizontal(|ui| {
@@ -490,6 +490,22 @@ impl eframe::App for DamageCalcApp {
                                 });
                             });
                             ui.vertical_centered_justified(|ui| {
+                                if let Some(base_stats) = self.calc.classes.get(&unit.name) {
+                                    egui::ProgressBar::new(
+                                        1. - unit.damage_left as f32
+                                            / (base_stats.health + unit.stats.health) as f32,
+                                    )
+                                        .text(format!(
+                                            "{}/{}",
+                                            base_stats.health + unit.stats.health - unit.damage_left,
+                                            base_stats.health + unit.stats.health
+                                        ))
+                                        .ui(ui);
+                                } else {
+                                    egui::ProgressBar::new(1.).text("-").ui(ui);
+                                }
+                            });
+                            ui.vertical_centered_justified(|ui| {
                                 match (
                                     team.units.get_mut(team.select),
                                     enemy_team.units.get_mut(enemy_team.select),
@@ -536,7 +552,8 @@ impl eframe::App for DamageCalcApp {
                                                     .unwrap_or(Unit {
                                                         name: "-".to_string(),
                                                         stats: Default::default(),
-                                                        value: 0
+                                                        value: 0,
+                                                        damage_left: 0,
                                                     })
                                                     .name
                                             ))
@@ -668,6 +685,20 @@ impl eframe::App for DamageCalcApp {
                                     ui[2].checkbox(&mut team.retaliation, "retaliation")
                                 });
                             });
+                            if let Some(base_stats) = self.calc.classes.get(&unit.name) {
+                                egui::ProgressBar::new(
+                                    1. - unit.damage_left as f32
+                                        / (base_stats.health + unit.stats.health) as f32,
+                                )
+                                .text(format!(
+                                    "{}/{}",
+                                    base_stats.health + unit.stats.health - unit.damage_left,
+                                    base_stats.health + unit.stats.health
+                                ))
+                                .ui(ui);
+                            } else {
+                                egui::ProgressBar::new(1.).text("-").ui(ui);
+                            }
                             ui.horizontal(|ui| {
                                 ui.columns(2, |ui| {
                                     match (
@@ -719,7 +750,8 @@ impl eframe::App for DamageCalcApp {
                                                     .unwrap_or(Unit {
                                                         name: "-".to_string(),
                                                         stats: Default::default(),
-                                                        value: 0
+                                                        value: 0,
+                                                        damage_left: 0,
                                                     })
                                                     .name
                                             ))
@@ -772,6 +804,7 @@ impl eframe::App for DamageCalcApp {
                                     name: class.clone(),
                                     stats: Default::default(),
                                     value: 0,
+                                    damage_left: 0,
                                 });
                             }
                         });
