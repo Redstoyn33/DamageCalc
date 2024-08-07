@@ -248,9 +248,6 @@ impl eframe::App for DamageCalcApp {
                 {
                     self.json_window = !self.json_window;
                 }
-                if ui.button("test").clicked() {
-                    self.damages.push(DamageEffect::new(100));
-                }
             });
         });
         egui::SidePanel::left("team0_panel")
