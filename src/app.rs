@@ -492,12 +492,12 @@ impl eframe::App for DamageCalcApp {
                                         1. - unit.damage_left as f32
                                             / (base_stats.health + unit.stats.health) as f32,
                                     )
-                                        .text(format!(
-                                            "{}/{}",
-                                            base_stats.health + unit.stats.health - unit.damage_left,
-                                            base_stats.health + unit.stats.health
-                                        ))
-                                        .ui(ui);
+                                    .text(format!(
+                                        "{}/{}",
+                                        base_stats.health + unit.stats.health - unit.damage_left,
+                                        base_stats.health + unit.stats.health
+                                    ))
+                                    .ui(ui);
                                 } else {
                                     egui::ProgressBar::new(1.).text("-").ui(ui);
                                 }
