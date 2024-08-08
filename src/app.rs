@@ -587,7 +587,10 @@ impl eframe::App for DamageCalcApp {
                                     ui[2].checkbox(&mut team.retaliation, "retaliation")
                                 });
                             });
-                            ui.vertical_centered_justified(|ui| {
+                            ui.horizontal(|ui| {
+                                if ui.button("R").clicked() {
+                                    unit.damage_left = 0;
+                                }
                                 if let Some(base_stats) = self.calc.classes.get(&unit.name) {
                                     egui::ProgressBar::new(
                                         1. - unit.damage_left as f32
@@ -803,20 +806,25 @@ impl eframe::App for DamageCalcApp {
                                     ui[2].checkbox(&mut team.retaliation, "retaliation")
                                 });
                             });
-                            if let Some(base_stats) = self.calc.classes.get(&unit.name) {
-                                egui::ProgressBar::new(
-                                    1. - unit.damage_left as f32
-                                        / (base_stats.health + unit.stats.health) as f32,
-                                )
-                                .text(format!(
-                                    "{}/{}",
-                                    base_stats.health + unit.stats.health - unit.damage_left,
-                                    base_stats.health + unit.stats.health
-                                ))
-                                .ui(ui);
-                            } else {
-                                egui::ProgressBar::new(1.).text("-").ui(ui);
-                            }
+                            ui.horizontal(|ui|{
+                                if ui.button("R").clicked() {
+                                    unit.damage_left = 0;
+                                }
+                                if let Some(base_stats) = self.calc.classes.get(&unit.name) {
+                                    egui::ProgressBar::new(
+                                        1. - unit.damage_left as f32
+                                            / (base_stats.health + unit.stats.health) as f32,
+                                    )
+                                        .text(format!(
+                                            "{}/{}",
+                                            base_stats.health + unit.stats.health - unit.damage_left,
+                                            base_stats.health + unit.stats.health
+                                        ))
+                                        .ui(ui);
+                                } else {
+                                    egui::ProgressBar::new(1.).text("-").ui(ui);
+                                }
+                            });
                             ui.horizontal(|ui| {
                                 ui.columns(2, |ui| {
                                     match (
