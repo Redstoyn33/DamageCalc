@@ -21,6 +21,8 @@ pub struct DamageCalcApp {
     json_window: bool,
     units_count: usize,
     settings_window: bool,
+    class_select_window: bool,
+    class_select_search: String,
     negative_stats: bool,
     can_kill_yourself: bool,
 
@@ -41,6 +43,8 @@ impl Default for DamageCalcApp {
             json_window: false,
             units_count: 0,
             settings_window: false,
+            class_select_window: false,
+            class_select_search: "".to_string(),
             negative_stats: false,
             can_kill_yourself: false,
             style: Default::default(),
@@ -233,6 +237,62 @@ impl eframe::App for DamageCalcApp {
                             .show(ui);
                     });
             });
+        egui::Window::new("class select")
+            .open(&mut self.class_select_window)
+            .show(ctx, |ui| {
+                egui::ComboBox::from_id_source("class_team_select")
+                    .selected_text(&self.teams.get(self.team0).unwrap_or(&Team::new(0)).name)
+                    .show_ui(ui, |ui| {
+                        for (i, team) in self.teams.iter().enumerate() {
+                            ui.selectable_value(&mut self.team0, i, &team.name);
+                        }
+                    });
+                if let Some(team) = self.teams.get_mut(self.team0) {
+                    let sel = team.select;
+                    egui::DragValue::new(&mut team.select)
+                        .range(0..=team.units.len() - 1)
+                        .suffix(format!(
+                            " {}",
+                            &team
+                                .units
+                                .get(sel)
+                                .cloned()
+                                .unwrap_or(None)
+                                .unwrap_or(Unit {
+                                    name: "-".to_string(),
+                                    stats: Default::default(),
+                                    value: 0,
+                                    damage_left: 0,
+                                })
+                                .name
+                        ))
+                        .ui(ui);
+                    if let Some(maybe_unit) = team.units.get_mut(team.select) {
+                        if let Some(unit) = maybe_unit {
+                            ui.text_edit_singleline(&mut self.class_select_search);
+                            egui::ScrollArea::vertical()
+                                .show(ui, |ui| {
+                                    for (name, _) in self.calc.classes.iter() {
+                                        if name.to_lowercase().contains(&self.class_select_search.to_lowercase()) {
+                                            if ui.button(name).clicked() {
+                                                unit.name = name.clone();
+                                            }
+                                        }
+                                    }
+                                });
+                        } else {
+                            if ui.button("alive").clicked() {
+                                *maybe_unit = Some(Unit{
+                                    name: "".to_string(),
+                                    stats: Default::default(),
+                                    value: 0,
+                                    damage_left: 0,
+                                });
+                            }
+                        }
+                    }
+                }
+            });
         egui::TopBottomPanel::top("menu").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 if ui.button("settings").clicked() {
@@ -247,6 +307,9 @@ impl eframe::App for DamageCalcApp {
                     .clicked()
                 {
                     self.json_window = !self.json_window;
+                }
+                if ui.button("class select").clicked() {
+                    self.class_select_window = !self.class_select_window;
                 }
             });
         });
