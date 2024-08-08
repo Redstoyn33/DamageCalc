@@ -1,14 +1,16 @@
 use std::collections::HashMap;
-
+use rand::{Rng, thread_rng};
 use serde_json::Value;
 
 #[derive(serde::Deserialize, serde::Serialize, Default, Clone)]
 #[serde(default)]
 pub struct Stats {
     pub attack: i32,
-    pub damage: i32,
+    pub min_dmg: i32,
+    pub max_dmg: i32,
     pub defense: i32,
     pub health: i32,
+    pub desc: String,
 }
 #[derive(serde::Deserialize, serde::Serialize, Default, Clone)]
 #[serde(default)]
@@ -46,9 +48,11 @@ fn map_json(json: &str) -> Option<(HashMap<String, Stats>, i32)> {
 pub fn deser_stats(value: &Value) -> Option<Stats> {
     Some(Stats {
         attack: value["attack"].as_i64()? as i32,
-        damage: value["damage"].as_i64()? as i32,
+        min_dmg: value["min_dmg"].as_i64()? as i32,
+        max_dmg: value["max_dmg"].as_i64()? as i32,
         defense: value["defence"].as_i64()? as i32,
         health: value["health"].as_i64()? as i32,
+        desc: value["description"].as_str()?.to_string(),
     })
 }
 
@@ -74,7 +78,7 @@ impl Calc {
         let attack = attacker.stats.attack + astats.attack;
         let defence = defender.stats.defense + estats.defense;
 
-        let damage = attacker.stats.damage + astats.damage;
+        let damage = thread_rng().gen_range(attacker.stats.min_dmg + astats.min_dmg..=attacker.stats.max_dmg + astats.max_dmg);
         let health = defender.stats.health + estats.health;
 
         if attack > defence {

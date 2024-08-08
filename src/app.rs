@@ -438,7 +438,7 @@ impl eframe::App for DamageCalcApp {
                             ui.horizontal(|ui| {
                                 ui.columns(6, |ui| {
                                     ui[0].vertical_centered(|ui| {
-                                        ui.label("dmg:");
+                                        ui.label("dmg_:");
                                     });
                                     ui[2].vertical_centered(|ui| {
                                         ui.label("+");
@@ -447,7 +447,7 @@ impl eframe::App for DamageCalcApp {
                                         ui.label("=");
                                     });
                                     ui[3].vertical_centered(|ui| {
-                                        egui::DragValue::new(&mut unit.stats.damage)
+                                        egui::DragValue::new(&mut unit.stats.min_dmg)
                                             .range(
                                                 if self.negative_stats { i32::MIN } else { 0 }
                                                     ..=i32::MAX,
@@ -456,11 +456,49 @@ impl eframe::App for DamageCalcApp {
                                     });
                                     if let Some(base_stats) = self.calc.classes.get(&unit.name) {
                                         ui[1].vertical_centered(|ui| {
-                                            ui.label(base_stats.damage.to_string());
+                                            ui.label(base_stats.min_dmg.to_string());
                                         });
                                         ui[5].vertical_centered(|ui| {
                                             ui.label(
-                                                (base_stats.damage + unit.stats.damage).to_string(),
+                                                (base_stats.min_dmg + unit.stats.min_dmg).to_string(),
+                                            );
+                                        });
+                                    } else {
+                                        ui[1].vertical_centered(|ui| {
+                                            ui.label("-");
+                                        });
+                                        ui[5].vertical_centered(|ui| {
+                                            ui.label("-");
+                                        });
+                                    }
+                                });
+                            });
+                            ui.horizontal(|ui| {
+                                ui.columns(6, |ui| {
+                                    ui[0].vertical_centered(|ui| {
+                                        ui.label("dmg[]:");
+                                    });
+                                    ui[2].vertical_centered(|ui| {
+                                        ui.label("+");
+                                    });
+                                    ui[4].vertical_centered(|ui| {
+                                        ui.label("=");
+                                    });
+                                    ui[3].vertical_centered(|ui| {
+                                        egui::DragValue::new(&mut unit.stats.max_dmg)
+                                            .range(
+                                                if self.negative_stats { i32::MIN } else { 0 }
+                                                    ..=i32::MAX,
+                                            )
+                                            .ui(ui);
+                                    });
+                                    if let Some(base_stats) = self.calc.classes.get(&unit.name) {
+                                        ui[1].vertical_centered(|ui| {
+                                            ui.label(base_stats.max_dmg.to_string());
+                                        });
+                                        ui[5].vertical_centered(|ui| {
+                                            ui.label(
+                                                (base_stats.max_dmg + unit.stats.max_dmg).to_string(),
                                             );
                                         });
                                     } else {
@@ -649,17 +687,37 @@ impl eframe::App for DamageCalcApp {
                             });
                             ui.horizontal(|ui| {
                                 ui.columns(4, |ui| {
-                                    ui[0].label("dmg:");
-                                    egui::DragValue::new(&mut unit.stats.damage)
+                                    ui[0].label("dmg_:");
+                                    egui::DragValue::new(&mut unit.stats.min_dmg)
                                         .range(
                                             if self.negative_stats { i32::MIN } else { 0 }
                                                 ..=i32::MAX,
                                         )
                                         .ui(&mut ui[2]);
                                     if let Some(base_stats) = self.calc.classes.get(&unit.name) {
-                                        ui[1].label(base_stats.damage.to_string());
+                                        ui[1].label(base_stats.min_dmg.to_string());
                                         ui[3].label(
-                                            (base_stats.damage + unit.stats.damage).to_string(),
+                                            (base_stats.min_dmg + unit.stats.min_dmg).to_string(),
+                                        );
+                                    } else {
+                                        ui[1].label("-");
+                                        ui[3].label("-");
+                                    }
+                                });
+                            });
+                            ui.horizontal(|ui| {
+                                ui.columns(4, |ui| {
+                                    ui[0].label("dmg[]:");
+                                    egui::DragValue::new(&mut unit.stats.max_dmg)
+                                        .range(
+                                            if self.negative_stats { i32::MIN } else { 0 }
+                                                ..=i32::MAX,
+                                        )
+                                        .ui(&mut ui[2]);
+                                    if let Some(base_stats) = self.calc.classes.get(&unit.name) {
+                                        ui[1].label(base_stats.max_dmg.to_string());
+                                        ui[3].label(
+                                            (base_stats.max_dmg + unit.stats.max_dmg).to_string(),
                                         );
                                     } else {
                                         ui[1].label("-");
@@ -783,6 +841,13 @@ impl eframe::App for DamageCalcApp {
                                         }
                                     });
                                 });
+                            }
+                        }
+                        if let Some(unit_cell) = team.units.get_mut(team.select) {
+                            if let Some(unit) = unit_cell {
+                                if let Some(base) = self.calc.classes.get(&unit.name) {
+                                    ui.label(&base.desc);
+                                }
                             }
                         }
                     } else {
