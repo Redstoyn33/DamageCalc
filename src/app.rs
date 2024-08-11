@@ -250,7 +250,7 @@ impl eframe::App for DamageCalcApp {
                 if let Some(team) = self.teams.get_mut(self.team0) {
                     let sel = team.select;
                     egui::DragValue::new(&mut team.select)
-                        .range(0..=team.units.len() - 1)
+                        .range(0..=team.units.len() as i32 - 1)
                         .suffix(format!(
                             " {}",
                             &team
