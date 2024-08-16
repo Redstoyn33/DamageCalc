@@ -78,7 +78,7 @@ impl Calc {
         let attack = attacker.stats.attack + astats.attack;
         let defence = defender.stats.defense + estats.defense;
 
-        let damage = thread_rng().gen_range(attacker.stats.min_dmg + astats.min_dmg..=attacker.stats.max_dmg + astats.max_dmg);
+        let damage = thread_rng().gen_range((attacker.stats.min_dmg + astats.min_dmg) as f32 * attacker.value as f32 * (percent as f32 / 100.0)..=(attacker.stats.max_dmg + astats.max_dmg) as f32 * attacker.value as f32 * (percent as f32 / 100.0));
         let health = defender.stats.health + estats.health;
 
         if attack > defence {
@@ -87,9 +87,8 @@ impl Calc {
                 delta = 300;
             }
 
-            let damage_dealt = (damage * attacker.value) as f32
-                * (1.0 + (delta as f32 / 100.0))
-                * (percent as f32 / 100.0);
+            let damage_dealt = damage as f32
+                * (1.0 + (delta as f32 / 100.0));
 
             let all_health = (defender.value * health) as f32;
 
@@ -114,9 +113,8 @@ impl Calc {
                 delta = 70.0;
             }
 
-            let damage_dealt = (damage * attacker.value) as f32
-                * (1.0 - (delta as f32 / 100.0))
-                * (percent as f32 / 100.0);
+            let damage_dealt = damage as f32
+                * (1.0 - (delta as f32 / 100.0));
 
             let all_health = (defender.value * health) as f32;
 
@@ -136,7 +134,7 @@ impl Calc {
             }
             return (damage_dealt as i32, None);
         } else {
-            let damage_dealt = (damage * attacker.value) as f32 * (percent as f32 / 100.0);
+            let damage_dealt = damage as f32;
 
             let all_health = (defender.value * health) as f32;
 
