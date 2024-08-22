@@ -53,10 +53,10 @@ pub fn deser_stats(value: &Value) -> Option<Stats> {
         (Some(v1), Some(v2)) => (v1 as i32, v2 as i32),
         (None, None) => {
             let (v1, v2) = Calc::parse_old_luck_and_leadership(&desc);
-            (v1?, v2?)
+            (v1.unwrap_or(0), v2.unwrap_or(0))
         }
-        (Some(v1), None) => (v1 as i32, Calc::parse_old_luck_and_leadership(&desc).1?),
-        (None, Some(v2)) => (Calc::parse_old_luck_and_leadership(&desc).0?, v2 as i32),
+        (Some(v1), None) => (v1 as i32, Calc::parse_old_luck_and_leadership(&desc).1.unwrap_or(0)),
+        (None, Some(v2)) => (Calc::parse_old_luck_and_leadership(&desc).0.unwrap_or(0), v2 as i32),
     };
     Some(Stats {
         attack: value["attack"].as_i64()? as i32,
@@ -85,7 +85,7 @@ impl Calc {
             if let Some(luck_start) = desc.find("Удача:") {
                 let luck_start = luck_start + "Удача:".len();
                 if let Some(luck_end) = desc[luck_start..].find(',') {
-                    if let Ok(v) = desc[luck_start..luck_end].trim().parse::<i32>() {
+                    if let Ok(v) = desc[luck_start..luck_start+luck_end].trim().parse::<i32>() {
                         Some(v)
                     } else {
                         None
@@ -99,7 +99,7 @@ impl Calc {
             if let Some(leadership_start) = desc.find("Лидерство:") {
                 let leadership_start = leadership_start + "Лидерство:".len();
                 if let Some(leadership_end) = desc[leadership_start..].find(',') {
-                    if let Ok(v) = desc[leadership_start..leadership_end].trim().parse::<i32>() {
+                    if let Ok(v) = desc[leadership_start..leadership_start+leadership_end].trim().parse::<i32>() {
                         Some(v)
                     } else {
                         None

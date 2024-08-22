@@ -579,6 +579,82 @@ impl eframe::App for DamageCalcApp {
                                 });
                             });
                             ui.horizontal(|ui| {
+                                ui.columns(6, |ui| {
+                                    ui[0].vertical_centered(|ui| {
+                                        ui.label("luck:");
+                                    });
+                                    ui[2].vertical_centered(|ui| {
+                                        ui.label("+");
+                                    });
+                                    ui[4].vertical_centered(|ui| {
+                                        ui.label("=");
+                                    });
+                                    ui[3].vertical_centered(|ui| {
+                                        egui::DragValue::new(&mut unit.stats.luck)
+                                            .range(
+                                                if self.negative_stats { i32::MIN } else { 0 }
+                                                    ..=i32::MAX,
+                                            )
+                                            .ui(ui);
+                                    });
+                                    if let Some(base_stats) = self.calc.classes.get(&unit.name) {
+                                        ui[1].vertical_centered(|ui| {
+                                            ui.label(base_stats.luck.to_string());
+                                        });
+                                        ui[5].vertical_centered(|ui| {
+                                            ui.label(
+                                                (base_stats.luck + unit.stats.luck).to_string(),
+                                            );
+                                        });
+                                    } else {
+                                        ui[1].vertical_centered(|ui| {
+                                            ui.label("-");
+                                        });
+                                        ui[5].vertical_centered(|ui| {
+                                            ui.label("-");
+                                        });
+                                    }
+                                });
+                            });
+                            ui.horizontal(|ui| {
+                                ui.columns(6, |ui| {
+                                    ui[0].vertical_centered(|ui| {
+                                        ui.label("lead:");
+                                    });
+                                    ui[2].vertical_centered(|ui| {
+                                        ui.label("+");
+                                    });
+                                    ui[4].vertical_centered(|ui| {
+                                        ui.label("=");
+                                    });
+                                    ui[3].vertical_centered(|ui| {
+                                        egui::DragValue::new(&mut unit.stats.leadership)
+                                            .range(
+                                                if self.negative_stats { i32::MIN } else { 0 }
+                                                    ..=i32::MAX,
+                                            )
+                                            .ui(ui);
+                                    });
+                                    if let Some(base_stats) = self.calc.classes.get(&unit.name) {
+                                        ui[1].vertical_centered(|ui| {
+                                            ui.label(base_stats.leadership.to_string());
+                                        });
+                                        ui[5].vertical_centered(|ui| {
+                                            ui.label(
+                                                (base_stats.leadership + unit.stats.leadership).to_string(),
+                                            );
+                                        });
+                                    } else {
+                                        ui[1].vertical_centered(|ui| {
+                                            ui.label("-");
+                                        });
+                                        ui[5].vertical_centered(|ui| {
+                                            ui.label("-");
+                                        });
+                                    }
+                                });
+                            });
+                            ui.horizontal(|ui| {
                                 ui.columns(3, |ui| {
                                     egui::DragValue::new(&mut unit.value)
                                         .range(0..=i32::MAX)
@@ -788,6 +864,46 @@ impl eframe::App for DamageCalcApp {
                                         ui[1].label(base_stats.max_dmg.to_string());
                                         ui[3].label(
                                             (base_stats.max_dmg + unit.stats.max_dmg).to_string(),
+                                        );
+                                    } else {
+                                        ui[1].label("-");
+                                        ui[3].label("-");
+                                    }
+                                });
+                            });
+                            ui.horizontal(|ui| {
+                                ui.columns(4, |ui| {
+                                    ui[0].label("luck:");
+                                    egui::DragValue::new(&mut unit.stats.luck)
+                                        .range(
+                                            if self.negative_stats { i32::MIN } else { 0 }
+                                                ..=i32::MAX,
+                                        )
+                                        .ui(&mut ui[2]);
+                                    if let Some(base_stats) = self.calc.classes.get(&unit.name) {
+                                        ui[1].label(base_stats.luck.to_string());
+                                        ui[3].label(
+                                            (base_stats.luck + unit.stats.luck).to_string(),
+                                        );
+                                    } else {
+                                        ui[1].label("-");
+                                        ui[3].label("-");
+                                    }
+                                });
+                            });
+                            ui.horizontal(|ui| {
+                                ui.columns(4, |ui| {
+                                    ui[0].label("lead:");
+                                    egui::DragValue::new(&mut unit.stats.leadership)
+                                        .range(
+                                            if self.negative_stats { i32::MIN } else { 0 }
+                                                ..=i32::MAX,
+                                        )
+                                        .ui(&mut ui[2]);
+                                    if let Some(base_stats) = self.calc.classes.get(&unit.name) {
+                                        ui[1].label(base_stats.leadership.to_string());
+                                        ui[3].label(
+                                            (base_stats.leadership + unit.stats.leadership).to_string(),
                                         );
                                     } else {
                                         ui[1].label("-");
