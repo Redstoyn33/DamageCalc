@@ -1,6 +1,6 @@
-use std::collections::HashMap;
-use rand::{Rng, thread_rng};
+use rand::{thread_rng, Rng};
 use serde_json::Value;
+use std::collections::HashMap;
 
 #[derive(serde::Deserialize, serde::Serialize, Default, Clone)]
 #[serde(default)]
@@ -66,19 +66,54 @@ impl Calc {
         }
     }
 
+    pub fn parse_luck_and_leadership(&self, unit: &Unit) -> (i32, i32) {
+        let description = &self.classes[&unit.name].desc;
+        let luck = description
+            .get(description.find("Удача:").unwrap() + 12..)
+            .unwrap()
+            .split(",")
+            .next()
+            .unwrap()
+            .parse::<i32>()
+            .unwrap();
+        let leadership = description
+            .get(description.find("Лидерство:").unwrap() + 20..)
+            .unwrap()
+            .split(",")
+            .next()
+            .unwrap()
+            .parse::<i32>()
+            .unwrap();
+        (luck, leadership)
+    }
+
     pub fn calculate(
         &self,
         defender: &mut Unit,
         attacker: &mut Unit,
         percent: i32,
         retaliation: bool,
-    ) -> (i32, Option<i32>) {
+    ) -> (i32, Option<(i32, [String; 2])>, [String; 2]) {
+        let mut strings: [String; 2] = [String::new(), String::new()];
         let astats = &self.classes[&attacker.name];
+        let (attacker_luck, attacker_leadership) = self.parse_luck_and_leadership(attacker);
         let estats = &self.classes[&defender.name];
         let attack = attacker.stats.attack + astats.attack;
         let defence = defender.stats.defense + estats.defense;
 
-        let damage = thread_rng().gen_range((attacker.stats.min_dmg + astats.min_dmg) as f32 * attacker.value as f32 * (percent as f32 / 100.0)..=(attacker.stats.max_dmg + astats.max_dmg) as f32 * attacker.value as f32 * (percent as f32 / 100.0));
+        let luck = thread_rng().gen_range(0..100);
+        if luck < attacker_luck {
+            strings[0] = "Ооо повезло-повезло!".to_string();
+        }
+
+        let leadership = thread_rng().gen_range(0..100);
+        if leadership < attacker_leadership {
+            strings[1] = "Ебаны рот погнали!".to_string();
+        }
+
+        let damage = thread_rng().gen_range(
+            attacker.stats.min_dmg + astats.min_dmg..=attacker.stats.max_dmg + astats.max_dmg,
+        );
         let health = defender.stats.health + estats.health;
 
         if attack > defence {
@@ -87,8 +122,9 @@ impl Calc {
                 delta = 300;
             }
 
-            let damage_dealt = damage as f32
-                * (1.0 + (delta as f32 / 100.0));
+            let damage_dealt = (damage * attacker.value) as f32
+                * (1.0 + (delta as f32 / 100.0))
+                * (percent as f32 / 100.0);
 
             let all_health = (defender.value * health) as f32;
 
@@ -97,24 +133,28 @@ impl Calc {
 
             defender.value = creatures_left.ceil() as i32;
 
+
             defender.damage_left =
                 ((creatures_left.ceil() - creatures_left) * health as f32) as i32;
 
             if retaliation {
+                let (x,_,y) = self.calculate(attacker, defender, 100, false);
                 return (
                     damage_dealt as i32,
-                    Some(self.calculate(attacker, defender, 100, false).0),
+                    Some((x,y)),
+                    strings,
                 );
             }
-            return (damage_dealt as i32, None);
+            return (damage_dealt as i32, None, strings);
         } else if attack < defence {
             let mut delta = (defence - attack) as f32 * 2.5;
             if delta >= 70.0 {
                 delta = 70.0;
             }
 
-            let damage_dealt = damage as f32
-                * (1.0 - (delta as f32 / 100.0));
+            let damage_dealt = (damage * attacker.value) as f32
+                * (1.0 - (delta as f32 / 100.0))
+                * (percent as f32 / 100.0);
 
             let all_health = (defender.value * health) as f32;
 
@@ -127,14 +167,16 @@ impl Calc {
                 ((creatures_left.ceil() - creatures_left) * health as f32) as i32;
 
             if retaliation {
+                let (x,_,y) = self.calculate(attacker, defender, 100, false);
                 return (
                     damage_dealt as i32,
-                    Some(self.calculate(attacker, defender, 100, false).0),
+                    Some((x,y)),
+                    strings,
                 );
             }
-            return (damage_dealt as i32, None);
+            return (damage_dealt as i32, None, strings);
         } else {
-            let damage_dealt = damage as f32;
+            let damage_dealt = (damage * attacker.value) as f32 * (percent as f32 / 100.0);
 
             let all_health = (defender.value * health) as f32;
 
@@ -147,13 +189,15 @@ impl Calc {
                 ((creatures_left.ceil() - creatures_left) * health as f32) as i32;
 
             if retaliation {
+                let (x,_,y) = self.calculate(attacker, defender, 100, false);
                 return (
                     damage_dealt as i32,
-                    Some(self.calculate(attacker, defender, 100, false).0),
+                    Some((x,y)),
+                    strings,
                 );
             }
 
-            return (damage_dealt as i32, None);
+            return (damage_dealt as i32, None, strings);
         }
     }
 }

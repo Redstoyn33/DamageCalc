@@ -7,6 +7,7 @@ use egui::{
     Widget,
 };
 use std::mem::swap;
+use std::ops::Add;
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -311,6 +312,9 @@ impl eframe::App for DamageCalcApp {
                 if ui.button("class select").clicked() {
                     self.class_select_window = !self.class_select_window;
                 }
+                //if ui.button("test").clicked() {
+                //    self.damages.push(DamageEffect::new(100,["line1".to_string(),"line2".to_string()]))
+                //}
             });
         });
         egui::SidePanel::left("team0_panel")
@@ -613,15 +617,15 @@ impl eframe::App for DamageCalcApp {
                                 ) {
                                     (Some(Some(unit)), Some(Some(enemy_unit))) => {
                                         if ui.button("attack").clicked() {
-                                            let (dmg, self_dmg) = self.calc.calculate(
+                                            let (dmg, self_dmg,text) = self.calc.calculate(
                                                 enemy_unit,
                                                 unit,
                                                 team.percent,
                                                 enemy_team.retaliation,
                                             );
-                                            self.damages.push(DamageEffect::new(dmg));
-                                            if let Some(dmg) = self_dmg {
-                                                self.damages.push(DamageEffect::new(dmg));
+                                            self.damages.push(DamageEffect::new(dmg,text));
+                                            if let Some((dmg,text)) = self_dmg {
+                                                self.damages.push(DamageEffect::new(dmg,text));
                                             }
                                         }
                                     }
@@ -667,7 +671,7 @@ impl eframe::App for DamageCalcApp {
                                                 u2.get_mut(team.second_select),
                                             ) {
                                                 (Some(Some(unit)), Some(Some(enemy_unit))) => {
-                                                    let (dmg, self_dmg) = self.calc.calculate(
+                                                    let (dmg, self_dmg, text) = self.calc.calculate(
                                                         enemy_unit,
                                                         unit,
                                                         team.percent,
@@ -679,9 +683,9 @@ impl eframe::App for DamageCalcApp {
                                                         .units
                                                         .get_mut(team.second_select)
                                                         .unwrap() = Some(enemy_unit.clone());
-                                                    self.damages.push(DamageEffect::new(dmg));
-                                                    if let Some(dmg) = self_dmg {
-                                                        self.damages.push(DamageEffect::new(dmg));
+                                                    self.damages.push(DamageEffect::new(dmg,text));
+                                                    if let Some((dmg,text)) = self_dmg {
+                                                        self.damages.push(DamageEffect::new(dmg,text));
                                                     }
                                                 }
                                                 _ => {}
@@ -833,15 +837,15 @@ impl eframe::App for DamageCalcApp {
                                     ) {
                                         (Some(Some(unit)), Some(Some(enemy_unit))) => {
                                             if ui[0].button("attack").clicked() {
-                                                let (dmg, self_dmg) = self.calc.calculate(
+                                                let (dmg, self_dmg,text) = self.calc.calculate(
                                                     enemy_unit,
                                                     unit,
                                                     team.percent,
                                                     enemy_team.retaliation,
                                                 );
-                                                self.damages.push(DamageEffect::new(dmg));
-                                                if let Some(dmg) = self_dmg {
-                                                    self.damages.push(DamageEffect::new(dmg));
+                                                self.damages.push(DamageEffect::new(dmg,text));
+                                                if let Some((dmg,text)) = self_dmg {
+                                                    self.damages.push(DamageEffect::new(dmg,text));
                                                 }
                                             }
                                         }
@@ -890,7 +894,7 @@ impl eframe::App for DamageCalcApp {
                                                 u2.get_mut(team.second_select),
                                             ) {
                                                 (Some(Some(unit)), Some(Some(enemy_unit))) => {
-                                                    let (dmg, self_dmg) = self.calc.calculate(
+                                                    let (dmg, self_dmg,text) = self.calc.calculate(
                                                         enemy_unit,
                                                         unit,
                                                         team.percent,
@@ -902,9 +906,9 @@ impl eframe::App for DamageCalcApp {
                                                         .units
                                                         .get_mut(team.second_select)
                                                         .unwrap() = Some(enemy_unit.clone());
-                                                    self.damages.push(DamageEffect::new(dmg));
-                                                    if let Some(dmg) = self_dmg {
-                                                        self.damages.push(DamageEffect::new(dmg));
+                                                    self.damages.push(DamageEffect::new(dmg,text));
+                                                    if let Some((dmg,text)) = self_dmg {
+                                                        self.damages.push(DamageEffect::new(dmg,text));
                                                     }
                                                 }
                                                 _ => {}
@@ -1119,6 +1123,7 @@ impl Style {
 
 struct DamageEffect {
     damage: i32,
+    text: [String; 2],
     init: bool,
     start_time: f64,
 }
@@ -1147,6 +1152,16 @@ impl DamageEffect {
                 FontId::proportional(55.),
                 Color32::RED,
             );
+            for i in 0..2 {
+                let spos = spos.add(Vec2::new(0.,(i+1) as f32 * -55.));
+                ui.painter().text(
+                    spos.lerp(epos, (p * p * p) as f32),
+                    Align2::CENTER_CENTER,
+                    &self.text[i],
+                    FontId::proportional(55.),
+                    Color32::RED,
+                );
+            }
         } else {
             let spos = ui.max_rect().center();
             ui.ctx().request_repaint();
@@ -1161,12 +1176,23 @@ impl DamageEffect {
                 FontId::proportional(55.),
                 Color32::RED,
             );
+            for i in 0..2 {
+                let spos = spos.add(Vec2::new(0.,(i+1) as f32 * -55.));
+                ui.painter().text(
+                    spos,
+                    Align2::CENTER_CENTER,
+                    &self.text[i],
+                    FontId::proportional(55.),
+                    Color32::RED,
+                );
+            }
         }
         true
     }
-    fn new(dmg: i32) -> Self {
+    fn new(dmg: i32, text: [String; 2]) -> Self {
         Self {
             damage: dmg,
+            text,
             init: false,
             start_time: 0.,
         }
