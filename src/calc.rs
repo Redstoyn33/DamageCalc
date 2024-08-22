@@ -10,6 +10,8 @@ pub struct Stats {
     pub max_dmg: i32,
     pub defense: i32,
     pub health: i32,
+    pub luck: i32,
+    pub leadership: i32,
     pub desc: String,
 }
 #[derive(serde::Deserialize, serde::Serialize, Default, Clone)]
@@ -46,13 +48,25 @@ fn map_json(json: &str) -> Option<(HashMap<String, Stats>, i32)> {
 }
 
 pub fn deser_stats(value: &Value) -> Option<Stats> {
+    let desc = value["description"].as_str()?.to_string();
+    let (luck, leadership) = match (value["luck"].as_i64(), value["leadership"].as_i64()) {
+        (Some(v1), Some(v2)) => (v1 as i32, v2 as i32),
+        (None, None) => {
+            let (v1, v2) = Calc::parse_old_luck_and_leadership(&desc);
+            (v1?, v2?)
+        }
+        (Some(v1), None) => (v1 as i32, Calc::parse_old_luck_and_leadership(&desc).1?),
+        (None, Some(v2)) => (Calc::parse_old_luck_and_leadership(&desc).0?, v2 as i32),
+    };
     Some(Stats {
         attack: value["attack"].as_i64()? as i32,
         min_dmg: value["min_dmg"].as_i64()? as i32,
         max_dmg: value["max_dmg"].as_i64()? as i32,
         defense: value["defence"].as_i64()? as i32,
         health: value["health"].as_i64()? as i32,
-        desc: value["description"].as_str()?.to_string(),
+        luck,
+        leadership,
+        desc,
     })
 }
 
@@ -66,25 +80,37 @@ impl Calc {
         }
     }
 
-    pub fn parse_luck_and_leadership(&self, unit: &Unit) -> (i32, i32) {
-        let description = &self.classes[&unit.name].desc;
-        let luck = description
-            .get(description.find("Удача:").unwrap() + 12..)
-            .unwrap()
-            .split(",")
-            .next()
-            .unwrap()
-            .parse::<i32>()
-            .unwrap();
-        let leadership = description
-            .get(description.find("Лидерство:").unwrap() + 20..)
-            .unwrap()
-            .split(",")
-            .next()
-            .unwrap()
-            .parse::<i32>()
-            .unwrap();
-        (luck, leadership)
+    pub fn parse_old_luck_and_leadership(desc: &String) -> (Option<i32>, Option<i32>) {
+        (
+            if let Some(luck_start) = desc.find("Удача:") {
+                let luck_start = luck_start + "Удача:".len();
+                if let Some(luck_end) = desc[luck_start..].find(',') {
+                    if let Ok(v) = desc[luck_start..luck_end].trim().parse::<i32>() {
+                        Some(v)
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            } else {
+                None
+            },
+            if let Some(leadership_start) = desc.find("Лидерство:") {
+                let leadership_start = leadership_start + "Лидерство:".len();
+                if let Some(leadership_end) = desc[leadership_start..].find(',') {
+                    if let Ok(v) = desc[leadership_start..leadership_end].trim().parse::<i32>() {
+                        Some(v)
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            } else {
+                None
+            },
+        )
     }
 
     pub fn calculate(
@@ -96,7 +122,8 @@ impl Calc {
     ) -> (i32, Option<(i32, [String; 2])>, [String; 2]) {
         let mut strings: [String; 2] = [String::new(), String::new()];
         let astats = &self.classes[&attacker.name];
-        let (attacker_luck, attacker_leadership) = self.parse_luck_and_leadership(attacker);
+        let attacker_luck = attacker.stats.luck + astats.luck;
+        let attacker_leadership = attacker.stats.leadership + astats.leadership;
         let estats = &self.classes[&defender.name];
         let attack = attacker.stats.attack + astats.attack;
         let defence = defender.stats.defense + estats.defense;
@@ -133,17 +160,12 @@ impl Calc {
 
             defender.value = creatures_left.ceil() as i32;
 
-
             defender.damage_left =
                 ((creatures_left.ceil() - creatures_left) * health as f32) as i32;
 
             if retaliation {
-                let (x,_,y) = self.calculate(attacker, defender, 100, false);
-                return (
-                    damage_dealt as i32,
-                    Some((x,y)),
-                    strings,
-                );
+                let (x, _, y) = self.calculate(attacker, defender, 100, false);
+                return (damage_dealt as i32, Some((x, y)), strings);
             }
             return (damage_dealt as i32, None, strings);
         } else if attack < defence {
@@ -167,12 +189,8 @@ impl Calc {
                 ((creatures_left.ceil() - creatures_left) * health as f32) as i32;
 
             if retaliation {
-                let (x,_,y) = self.calculate(attacker, defender, 100, false);
-                return (
-                    damage_dealt as i32,
-                    Some((x,y)),
-                    strings,
-                );
+                let (x, _, y) = self.calculate(attacker, defender, 100, false);
+                return (damage_dealt as i32, Some((x, y)), strings);
             }
             return (damage_dealt as i32, None, strings);
         } else {
@@ -189,12 +207,8 @@ impl Calc {
                 ((creatures_left.ceil() - creatures_left) * health as f32) as i32;
 
             if retaliation {
-                let (x,_,y) = self.calculate(attacker, defender, 100, false);
-                return (
-                    damage_dealt as i32,
-                    Some((x,y)),
-                    strings,
-                );
+                let (x, _, y) = self.calculate(attacker, defender, 100, false);
+                return (damage_dealt as i32, Some((x, y)), strings);
             }
 
             return (damage_dealt as i32, None, strings);
