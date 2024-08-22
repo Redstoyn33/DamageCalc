@@ -12,6 +12,7 @@ pub struct Stats {
     pub health: i32,
     pub luck: i32,
     pub leadership: i32,
+    pub absorb: i32,
     pub desc: String,
 }
 #[derive(serde::Deserialize, serde::Serialize, Default, Clone)]
@@ -66,6 +67,7 @@ pub fn deser_stats(value: &Value) -> Option<Stats> {
         health: value["health"].as_i64()? as i32,
         luck,
         leadership,
+        absorb: 0,
         desc,
     })
 }
@@ -153,6 +155,18 @@ impl Calc {
                 * (1.0 + (delta as f32 / 100.0))
                 * (percent as f32 / 100.0);
 
+            if damage_dealt <= defender.stats.absorb as f32 {
+                defender.stats.absorb -= damage_dealt as i32;
+                if retaliation {
+                    let (x, _, y) = self.calculate(attacker, defender, 100, false);
+                    return (0, Some((x, y)), strings);
+                }
+
+                return (0, None, strings);
+            }
+            let damage_dealt = damage_dealt - defender.stats.absorb as f32;
+            defender.stats.absorb = 0;
+
             let all_health = (defender.value * health) as f32;
 
             let creatures_left =
@@ -178,6 +192,18 @@ impl Calc {
                 * (1.0 - (delta as f32 / 100.0))
                 * (percent as f32 / 100.0);
 
+            if damage_dealt <= defender.stats.absorb as f32 {
+                defender.stats.absorb -= damage_dealt as i32;
+                if retaliation {
+                    let (x, _, y) = self.calculate(attacker, defender, 100, false);
+                    return (0, Some((x, y)), strings);
+                }
+
+                return (0, None, strings);
+            }
+            let damage_dealt = damage_dealt - defender.stats.absorb  as f32;
+            defender.stats.absorb = 0;
+
             let all_health = (defender.value * health) as f32;
 
             let creatures_left =
@@ -195,6 +221,18 @@ impl Calc {
             return (damage_dealt as i32, None, strings);
         } else {
             let damage_dealt = (damage * attacker.value) as f32 * (percent as f32 / 100.0);
+
+            if damage_dealt <= defender.stats.absorb as f32 {
+                defender.stats.absorb -= damage_dealt as i32;
+                if retaliation {
+                    let (x, _, y) = self.calculate(attacker, defender, 100, false);
+                    return (0, Some((x, y)), strings);
+                }
+
+                return (0, None, strings);
+            }
+            let damage_dealt = damage_dealt - defender.stats.absorb as f32;
+            defender.stats.absorb = 0;
 
             let all_health = (defender.value * health) as f32;
 

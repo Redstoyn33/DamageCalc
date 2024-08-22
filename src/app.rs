@@ -9,6 +9,45 @@ use egui::{
 use std::mem::swap;
 use std::ops::Add;
 
+macro_rules! fancy_stat_row {
+    ( $name:literal, $field:ident, $ui:ident, $unit:ident, $self:ident) => {
+
+        $ui.horizontal(|ui| {
+            ui.columns(6, |ui| {
+                ui[0].vertical_centered(|ui| {
+                    ui.label($name);
+                });
+                ui[2].vertical_centered(|ui| {
+                    ui.label("+");
+                });
+                ui[4].vertical_centered(|ui| {
+                    ui.label("=");
+                });
+                ui[3].vertical_centered(|ui| {
+                    egui::DragValue::new(&mut $unit.stats.$field)
+                        .range(if $self.negative_stats { i32::MIN } else { 0 }..=i32::MAX)
+                        .ui(ui);
+                });
+                if let Some(base_stats) = $self.calc.classes.get(&$unit.name) {
+                    ui[1].vertical_centered(|ui| {
+                        ui.label(base_stats.$field.to_string());
+                    });
+                    ui[5].vertical_centered(|ui| {
+                        ui.label((base_stats.$field + $unit.stats.$field).to_string());
+                    });
+                } else {
+                    ui[1].vertical_centered(|ui| {
+                        ui.label("-");
+                    });
+                    ui[5].vertical_centered(|ui| {
+                        ui.label("-");
+                    });
+                }
+            });
+        });
+    };
+}
+
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
 pub struct DamageCalcApp {
@@ -271,19 +310,21 @@ impl eframe::App for DamageCalcApp {
                     if let Some(maybe_unit) = team.units.get_mut(team.select) {
                         if let Some(unit) = maybe_unit {
                             ui.text_edit_singleline(&mut self.class_select_search);
-                            egui::ScrollArea::vertical()
-                                .show(ui, |ui| {
-                                    for (name, _) in self.calc.classes.iter() {
-                                        if name.to_lowercase().contains(&self.class_select_search.to_lowercase()) {
-                                            if ui.button(name).clicked() {
-                                                unit.name = name.clone();
-                                            }
+                            egui::ScrollArea::vertical().show(ui, |ui| {
+                                for (name, _) in self.calc.classes.iter() {
+                                    if name
+                                        .to_lowercase()
+                                        .contains(&self.class_select_search.to_lowercase())
+                                    {
+                                        if ui.button(name).clicked() {
+                                            unit.name = name.clone();
                                         }
                                     }
-                                });
+                                }
+                            });
                         } else {
                             if ui.button("alive").clicked() {
-                                *maybe_unit = Some(Unit{
+                                *maybe_unit = Some(Unit {
                                     name: "".to_string(),
                                     stats: Default::default(),
                                     value: 0,
@@ -387,273 +428,14 @@ impl eframe::App for DamageCalcApp {
                                 });
                         });
                         if self.style.fancy_stats {
-                            ui.horizontal(|ui| {
-                                ui.columns(6, |ui| {
-                                    ui[0].vertical_centered(|ui| {
-                                        ui.label("atk:");
-                                    });
-                                    ui[2].vertical_centered(|ui| {
-                                        ui.label("+");
-                                    });
-                                    ui[4].vertical_centered(|ui| {
-                                        ui.label("=");
-                                    });
-                                    ui[3].vertical_centered(|ui| {
-                                        egui::DragValue::new(&mut unit.stats.attack)
-                                            .range(
-                                                if self.negative_stats { i32::MIN } else { 0 }
-                                                    ..=i32::MAX,
-                                            )
-                                            .ui(ui);
-                                    });
-                                    if let Some(base_stats) = self.calc.classes.get(&unit.name) {
-                                        ui[1].vertical_centered(|ui| {
-                                            ui.label(base_stats.attack.to_string());
-                                        });
-                                        ui[5].vertical_centered(|ui| {
-                                            ui.label(
-                                                (base_stats.attack + unit.stats.attack).to_string(),
-                                            );
-                                        });
-                                    } else {
-                                        ui[1].vertical_centered(|ui| {
-                                            ui.label("-");
-                                        });
-                                        ui[5].vertical_centered(|ui| {
-                                            ui.label("-");
-                                        });
-                                    }
-                                });
-                            });
-                            ui.horizontal(|ui| {
-                                ui.columns(6, |ui| {
-                                    ui[0].vertical_centered(|ui| {
-                                        ui.label("def:");
-                                    });
-                                    ui[2].vertical_centered(|ui| {
-                                        ui.label("+");
-                                    });
-                                    ui[4].vertical_centered(|ui| {
-                                        ui.label("=");
-                                    });
-                                    ui[3].vertical_centered(|ui| {
-                                        egui::DragValue::new(&mut unit.stats.defense)
-                                            .range(
-                                                if self.negative_stats { i32::MIN } else { 0 }
-                                                    ..=i32::MAX,
-                                            )
-                                            .ui(ui);
-                                    });
-                                    if let Some(base_stats) = self.calc.classes.get(&unit.name) {
-                                        ui[1].vertical_centered(|ui| {
-                                            ui.label(base_stats.defense.to_string());
-                                        });
-                                        ui[5].vertical_centered(|ui| {
-                                            ui.label(
-                                                (base_stats.defense + unit.stats.defense)
-                                                    .to_string(),
-                                            );
-                                        });
-                                    } else {
-                                        ui[1].vertical_centered(|ui| {
-                                            ui.label("-");
-                                        });
-                                        ui[5].vertical_centered(|ui| {
-                                            ui.label("-");
-                                        });
-                                    }
-                                });
-                            });
-                            ui.horizontal(|ui| {
-                                ui.columns(6, |ui| {
-                                    ui[0].vertical_centered(|ui| {
-                                        ui.label("hp:");
-                                    });
-                                    ui[2].vertical_centered(|ui| {
-                                        ui.label("+");
-                                    });
-                                    ui[4].vertical_centered(|ui| {
-                                        ui.label("=");
-                                    });
-                                    ui[3].vertical_centered(|ui| {
-                                        egui::DragValue::new(&mut unit.stats.health)
-                                            .range(
-                                                if self.negative_stats { i32::MIN } else { 0 }
-                                                    ..=i32::MAX,
-                                            )
-                                            .ui(ui);
-                                    });
-                                    if let Some(base_stats) = self.calc.classes.get(&unit.name) {
-                                        ui[1].vertical_centered(|ui| {
-                                            ui.label(base_stats.health.to_string());
-                                        });
-                                        ui[5].vertical_centered(|ui| {
-                                            ui.label(
-                                                (base_stats.health + unit.stats.health).to_string(),
-                                            );
-                                        });
-                                    } else {
-                                        ui[1].vertical_centered(|ui| {
-                                            ui.label("-");
-                                        });
-                                        ui[5].vertical_centered(|ui| {
-                                            ui.label("-");
-                                        });
-                                    }
-                                });
-                            });
-                            ui.horizontal(|ui| {
-                                ui.columns(6, |ui| {
-                                    ui[0].vertical_centered(|ui| {
-                                        ui.label("dmg_:");
-                                    });
-                                    ui[2].vertical_centered(|ui| {
-                                        ui.label("+");
-                                    });
-                                    ui[4].vertical_centered(|ui| {
-                                        ui.label("=");
-                                    });
-                                    ui[3].vertical_centered(|ui| {
-                                        egui::DragValue::new(&mut unit.stats.min_dmg)
-                                            .range(
-                                                if self.negative_stats { i32::MIN } else { 0 }
-                                                    ..=i32::MAX,
-                                            )
-                                            .ui(ui);
-                                    });
-                                    if let Some(base_stats) = self.calc.classes.get(&unit.name) {
-                                        ui[1].vertical_centered(|ui| {
-                                            ui.label(base_stats.min_dmg.to_string());
-                                        });
-                                        ui[5].vertical_centered(|ui| {
-                                            ui.label(
-                                                (base_stats.min_dmg + unit.stats.min_dmg).to_string(),
-                                            );
-                                        });
-                                    } else {
-                                        ui[1].vertical_centered(|ui| {
-                                            ui.label("-");
-                                        });
-                                        ui[5].vertical_centered(|ui| {
-                                            ui.label("-");
-                                        });
-                                    }
-                                });
-                            });
-                            ui.horizontal(|ui| {
-                                ui.columns(6, |ui| {
-                                    ui[0].vertical_centered(|ui| {
-                                        ui.label("dmg[]:");
-                                    });
-                                    ui[2].vertical_centered(|ui| {
-                                        ui.label("+");
-                                    });
-                                    ui[4].vertical_centered(|ui| {
-                                        ui.label("=");
-                                    });
-                                    ui[3].vertical_centered(|ui| {
-                                        egui::DragValue::new(&mut unit.stats.max_dmg)
-                                            .range(
-                                                if self.negative_stats { i32::MIN } else { 0 }
-                                                    ..=i32::MAX,
-                                            )
-                                            .ui(ui);
-                                    });
-                                    if let Some(base_stats) = self.calc.classes.get(&unit.name) {
-                                        ui[1].vertical_centered(|ui| {
-                                            ui.label(base_stats.max_dmg.to_string());
-                                        });
-                                        ui[5].vertical_centered(|ui| {
-                                            ui.label(
-                                                (base_stats.max_dmg + unit.stats.max_dmg).to_string(),
-                                            );
-                                        });
-                                    } else {
-                                        ui[1].vertical_centered(|ui| {
-                                            ui.label("-");
-                                        });
-                                        ui[5].vertical_centered(|ui| {
-                                            ui.label("-");
-                                        });
-                                    }
-                                });
-                            });
-                            ui.horizontal(|ui| {
-                                ui.columns(6, |ui| {
-                                    ui[0].vertical_centered(|ui| {
-                                        ui.label("luck:");
-                                    });
-                                    ui[2].vertical_centered(|ui| {
-                                        ui.label("+");
-                                    });
-                                    ui[4].vertical_centered(|ui| {
-                                        ui.label("=");
-                                    });
-                                    ui[3].vertical_centered(|ui| {
-                                        egui::DragValue::new(&mut unit.stats.luck)
-                                            .range(
-                                                if self.negative_stats { i32::MIN } else { 0 }
-                                                    ..=i32::MAX,
-                                            )
-                                            .ui(ui);
-                                    });
-                                    if let Some(base_stats) = self.calc.classes.get(&unit.name) {
-                                        ui[1].vertical_centered(|ui| {
-                                            ui.label(base_stats.luck.to_string());
-                                        });
-                                        ui[5].vertical_centered(|ui| {
-                                            ui.label(
-                                                (base_stats.luck + unit.stats.luck).to_string(),
-                                            );
-                                        });
-                                    } else {
-                                        ui[1].vertical_centered(|ui| {
-                                            ui.label("-");
-                                        });
-                                        ui[5].vertical_centered(|ui| {
-                                            ui.label("-");
-                                        });
-                                    }
-                                });
-                            });
-                            ui.horizontal(|ui| {
-                                ui.columns(6, |ui| {
-                                    ui[0].vertical_centered(|ui| {
-                                        ui.label("lead:");
-                                    });
-                                    ui[2].vertical_centered(|ui| {
-                                        ui.label("+");
-                                    });
-                                    ui[4].vertical_centered(|ui| {
-                                        ui.label("=");
-                                    });
-                                    ui[3].vertical_centered(|ui| {
-                                        egui::DragValue::new(&mut unit.stats.leadership)
-                                            .range(
-                                                if self.negative_stats { i32::MIN } else { 0 }
-                                                    ..=i32::MAX,
-                                            )
-                                            .ui(ui);
-                                    });
-                                    if let Some(base_stats) = self.calc.classes.get(&unit.name) {
-                                        ui[1].vertical_centered(|ui| {
-                                            ui.label(base_stats.leadership.to_string());
-                                        });
-                                        ui[5].vertical_centered(|ui| {
-                                            ui.label(
-                                                (base_stats.leadership + unit.stats.leadership).to_string(),
-                                            );
-                                        });
-                                    } else {
-                                        ui[1].vertical_centered(|ui| {
-                                            ui.label("-");
-                                        });
-                                        ui[5].vertical_centered(|ui| {
-                                            ui.label("-");
-                                        });
-                                    }
-                                });
-                            });
+                            fancy_stat_row!("atk:", attack, ui, unit, self);
+                            fancy_stat_row!("def:", defense, ui, unit, self);
+                            fancy_stat_row!("hp:", health, ui, unit, self);
+                            fancy_stat_row!("dmg_:", min_dmg, ui, unit, self);
+                            fancy_stat_row!("dmg[]:", max_dmg, ui, unit, self);
+                            fancy_stat_row!("luck:", luck, ui, unit, self);
+                            fancy_stat_row!("lead:", leadership, ui, unit, self);
+                            fancy_stat_row!("abs:", absorb, ui, unit, self);
                             ui.horizontal(|ui| {
                                 ui.columns(3, |ui| {
                                     egui::DragValue::new(&mut unit.value)
@@ -693,15 +475,15 @@ impl eframe::App for DamageCalcApp {
                                 ) {
                                     (Some(Some(unit)), Some(Some(enemy_unit))) => {
                                         if ui.button("attack").clicked() {
-                                            let (dmg, self_dmg,text) = self.calc.calculate(
+                                            let (dmg, self_dmg, text) = self.calc.calculate(
                                                 enemy_unit,
                                                 unit,
                                                 team.percent,
                                                 enemy_team.retaliation,
                                             );
-                                            self.damages.push(DamageEffect::new(dmg,text));
-                                            if let Some((dmg,text)) = self_dmg {
-                                                self.damages.push(DamageEffect::new(dmg,text));
+                                            self.damages.push(DamageEffect::new(dmg, text));
+                                            if let Some((dmg, text)) = self_dmg {
+                                                self.damages.push(DamageEffect::new(dmg, text));
                                             }
                                         }
                                     }
@@ -747,21 +529,23 @@ impl eframe::App for DamageCalcApp {
                                                 u2.get_mut(team.second_select),
                                             ) {
                                                 (Some(Some(unit)), Some(Some(enemy_unit))) => {
-                                                    let (dmg, self_dmg, text) = self.calc.calculate(
-                                                        enemy_unit,
-                                                        unit,
-                                                        team.percent,
-                                                        team.retaliation,
-                                                    );
+                                                    let (dmg, self_dmg, text) =
+                                                        self.calc.calculate(
+                                                            enemy_unit,
+                                                            unit,
+                                                            team.percent,
+                                                            team.retaliation,
+                                                        );
                                                     *team.units.get_mut(team.select).unwrap() =
                                                         Some(unit.clone());
                                                     *team
                                                         .units
                                                         .get_mut(team.second_select)
                                                         .unwrap() = Some(enemy_unit.clone());
-                                                    self.damages.push(DamageEffect::new(dmg,text));
-                                                    if let Some((dmg,text)) = self_dmg {
-                                                        self.damages.push(DamageEffect::new(dmg,text));
+                                                    self.damages.push(DamageEffect::new(dmg, text));
+                                                    if let Some((dmg, text)) = self_dmg {
+                                                        self.damages
+                                                            .push(DamageEffect::new(dmg, text));
                                                     }
                                                 }
                                                 _ => {}
@@ -882,9 +666,8 @@ impl eframe::App for DamageCalcApp {
                                         .ui(&mut ui[2]);
                                     if let Some(base_stats) = self.calc.classes.get(&unit.name) {
                                         ui[1].label(base_stats.luck.to_string());
-                                        ui[3].label(
-                                            (base_stats.luck + unit.stats.luck).to_string(),
-                                        );
+                                        ui[3]
+                                            .label((base_stats.luck + unit.stats.luck).to_string());
                                     } else {
                                         ui[1].label("-");
                                         ui[3].label("-");
@@ -903,7 +686,8 @@ impl eframe::App for DamageCalcApp {
                                     if let Some(base_stats) = self.calc.classes.get(&unit.name) {
                                         ui[1].label(base_stats.leadership.to_string());
                                         ui[3].label(
-                                            (base_stats.leadership + unit.stats.leadership).to_string(),
+                                            (base_stats.leadership + unit.stats.leadership)
+                                                .to_string(),
                                         );
                                     } else {
                                         ui[1].label("-");
@@ -926,7 +710,7 @@ impl eframe::App for DamageCalcApp {
                                     ui[2].checkbox(&mut team.retaliation, "retaliation")
                                 });
                             });
-                            ui.horizontal(|ui|{
+                            ui.horizontal(|ui| {
                                 if ui.button("R").clicked() {
                                     unit.damage_left = 0;
                                 }
@@ -935,12 +719,12 @@ impl eframe::App for DamageCalcApp {
                                         1. - unit.damage_left as f32
                                             / (base_stats.health + unit.stats.health) as f32,
                                     )
-                                        .text(format!(
-                                            "{}/{}",
-                                            base_stats.health + unit.stats.health - unit.damage_left,
-                                            base_stats.health + unit.stats.health
-                                        ))
-                                        .ui(ui);
+                                    .text(format!(
+                                        "{}/{}",
+                                        base_stats.health + unit.stats.health - unit.damage_left,
+                                        base_stats.health + unit.stats.health
+                                    ))
+                                    .ui(ui);
                                 } else {
                                     egui::ProgressBar::new(1.).text("-").ui(ui);
                                 }
@@ -953,15 +737,15 @@ impl eframe::App for DamageCalcApp {
                                     ) {
                                         (Some(Some(unit)), Some(Some(enemy_unit))) => {
                                             if ui[0].button("attack").clicked() {
-                                                let (dmg, self_dmg,text) = self.calc.calculate(
+                                                let (dmg, self_dmg, text) = self.calc.calculate(
                                                     enemy_unit,
                                                     unit,
                                                     team.percent,
                                                     enemy_team.retaliation,
                                                 );
-                                                self.damages.push(DamageEffect::new(dmg,text));
-                                                if let Some((dmg,text)) = self_dmg {
-                                                    self.damages.push(DamageEffect::new(dmg,text));
+                                                self.damages.push(DamageEffect::new(dmg, text));
+                                                if let Some((dmg, text)) = self_dmg {
+                                                    self.damages.push(DamageEffect::new(dmg, text));
                                                 }
                                             }
                                         }
@@ -1010,21 +794,23 @@ impl eframe::App for DamageCalcApp {
                                                 u2.get_mut(team.second_select),
                                             ) {
                                                 (Some(Some(unit)), Some(Some(enemy_unit))) => {
-                                                    let (dmg, self_dmg,text) = self.calc.calculate(
-                                                        enemy_unit,
-                                                        unit,
-                                                        team.percent,
-                                                        team.retaliation,
-                                                    );
+                                                    let (dmg, self_dmg, text) =
+                                                        self.calc.calculate(
+                                                            enemy_unit,
+                                                            unit,
+                                                            team.percent,
+                                                            team.retaliation,
+                                                        );
                                                     *team.units.get_mut(team.select).unwrap() =
                                                         Some(unit.clone());
                                                     *team
                                                         .units
                                                         .get_mut(team.second_select)
                                                         .unwrap() = Some(enemy_unit.clone());
-                                                    self.damages.push(DamageEffect::new(dmg,text));
-                                                    if let Some((dmg,text)) = self_dmg {
-                                                        self.damages.push(DamageEffect::new(dmg,text));
+                                                    self.damages.push(DamageEffect::new(dmg, text));
+                                                    if let Some((dmg, text)) = self_dmg {
+                                                        self.damages
+                                                            .push(DamageEffect::new(dmg, text));
                                                     }
                                                 }
                                                 _ => {}
@@ -1269,7 +1055,7 @@ impl DamageEffect {
                 Color32::RED,
             );
             for i in 0..2 {
-                let spos = spos.add(Vec2::new(0.,(i+1) as f32 * -55.));
+                let spos = spos.add(Vec2::new(0., (i + 1) as f32 * -55.));
                 ui.painter().text(
                     spos.lerp(epos, (p * p * p) as f32),
                     Align2::CENTER_CENTER,
@@ -1293,7 +1079,7 @@ impl DamageEffect {
                 Color32::RED,
             );
             for i in 0..2 {
-                let spos = spos.add(Vec2::new(0.,(i+1) as f32 * -55.));
+                let spos = spos.add(Vec2::new(0., (i + 1) as f32 * -55.));
                 ui.painter().text(
                     spos,
                     Align2::CENTER_CENTER,
